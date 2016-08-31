@@ -20,7 +20,7 @@ forsee).
 
 To run this code, you need Oliver's version of
 Adafruit_Python_ADS1x15, found at
-https://github.com/super-ego-man/Adafruit_Python_ADS1x15
+https://github.com/Byvire/Adafruit_Python_ADS1x15
 This and other requirements can be found in the documentation.
 
 Some of the instructions in the docs subdirectory are aimed at people

@@ -20,8 +20,8 @@ RPi.GPIO
 Clone the following repositories with Git:
 
 https://github.com/Adafruit/Adafruit_Python_GPIO
-https://github.com/super-ego-man/Adafruit_ADS1x15
-https://github.com/super-ego-man/THIS-REPO
+https://github.com/Byvire/Adafruit_ADS1x15
+https://github.com/Byvire/THIS-REPO
 
 For each of those, do
 python setup.py install
@@ -82,8 +82,8 @@ You'll follow a certain procedure for each URL
 in this list:
 
 https://github.com/adafruit/Adafruit_Python_GPIO.git
-https://github.com/super-ego-man/Adafruit_Python_ADS1x15.git
-https://github.com/super-ego-man/THIS-REPO
+https://github.com/Byvire/Adafruit_Python_ADS1x15.git
+https://github.com/Byvire/load-cell-reader
 
 Here's the procedure. Replace URL with the url from the list above.
 
