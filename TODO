@@ -11,7 +11,8 @@ Rename take_sample_data.py to something reasonable. Also clean it
    more intuitive than C-d as an end condition.
 
 Recommend that users not familiar with Linux add 'set -C' to their
-   .bashrc file.
+   .bashrc file. (Sort of done, in the sense that my helper script has
+   'set -C' in it.)
 
 Make a wrapper script that hides the complex command-line
    flags. There's just no need for it to do anything more complicated
@@ -27,10 +28,6 @@ Add labels to the circuit diagram, or wholly replace it with the
 Make unit tests. Learn how to use Mock for unit tests. All you should
    need to mock is the ADS1015 and that one GPIO pin. (I need to learn
    how to do this anyway.)
-
-Add an MIT license. And maybe a huge disclaimer, like "this may break
-   EVERYTHING but is not guaranteed to do so." ... I'm not an
-   electrical engineer, folks.
 
 IN THE MORE DISTANT FUTURE (i.e. probably never, but I recommend
    taking these steps to any programmer who continues my project.)

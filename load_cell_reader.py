@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 """ This records data from the circuit I designed. ADS1015 channel A0 reads
 data from a load cell, and channel A1 monitors the voltage provided by the
@@ -66,9 +66,9 @@ class Sleeper(object):
             self.sleep = lambda obj: None
 
 class EndCondition(Thread):
-    """ Programming with threads, lesson 0.
+    """Programming with threads, lesson 0.
     I'm proud of myself.
-    ... This thread sets a boolean when it reads an EOF (ctrl-D) from
+    ... This thread sets a boolean when you press enter.
     stdin. Use it to signal the end of your test.
     """
     def __init__(self, *args, **kwargs):
@@ -77,10 +77,10 @@ class EndCondition(Thread):
         self.finished = False
 
     def run(self):
-        """ Run until an EOF is received in stdin.
-        Then set self.finished to True.
+        """Run until the user presses ENTER (i.e. a newline is received on
+        stdin.)
         """
-        stdin.read()
+        stdin.readline()
         self.finished = True
 
 class SimpleTimer(object):
@@ -93,6 +93,7 @@ class SimpleTimer(object):
 
         SimpleTimer counts the time since its constructor is called. So you could
         say that this function marks the start of a new epoch.
+        ... Or you could not say that.
         """
         self.start_time = time.time()
 
@@ -106,6 +107,9 @@ class BatteryChecker(object):
     to monitor the batter level a little bit.
 
     Use this with the 'with ... as ...:' syntax.
+
+    Currently not used in favor of the read_battery function.
+    Also untested, which means it might not work.
     """
     def __init__(self, adc, count, start_lc=None, start_battery=None,
                  wait_function=None, file=stdout, get_time=time.time):
@@ -132,7 +136,8 @@ class BatteryChecker(object):
         return self.take_data
 
     def __exit__(self, type, value, traceback):
-        adc.stop_adc()
+        self.adc.stop_adc()
+        self.start_lc()
 
 def read_battery(adc, count, start_lc=None, start_battery=None,
                  wait_function=None, file=stdout, get_time=time.time):
@@ -211,6 +216,40 @@ def main(duration=0, rate=3300, gain=16, verbose=False, **kwargs):
         keep_going = lambda: time.time() < time_stop
 
     # Setup the ADC. See ADS1015 datasheet, pages 12 and 17.
+
+    # A couple things are different depending on whether we're measuring
+    # between lc_channel and ground, or between lc_channel and some other
+    # analogue input (i.e. kwargs['diff_channel']).
+    if differential:
+        print("Also differential mode", file=stderr)
+        # lc_channel, until this next part executes, has represented a single analog
+        # input pin on the ADS1015. To measure the difference between two analog inputs,
+        # we need to change it into a special value that's meaningful only to the
+        # ads_1015 hardware. See the ADS1015 data sheet, page 16.
+        diff_channel = kwargs['diff_channel'] if 'diff_channel' in kwargs else None
+        assert 0 <= diff_channel <= 3 and diff_channel != lc_channel
+        if lc_channel == 0 and diff_channel == 1:
+            lc_channel = 0
+        elif lc_channel == 0 and diff_channel == 3:
+            lc_channel = 1
+        elif lc_channel == 1 and diff_channel == 3:
+            lc_channel = 2
+        elif lc_channel == 2 and diff_channel == 3:
+            lc_channel = 3
+        else:
+            raise ValueError()
+        if use_comp: # if we're using the comparator
+            lc_start_adc_function = adc.start_adc_difference_comparator
+        else:
+            lc_start_adc_function = adc.start_adc_difference
+    else:
+        # Single ended mode is the opposite of differential mode, of course.
+        print("Also single-ended mode", file=stderr)
+        if use_comp:
+            lc_start_adc_function = adc.start_adc_comparator
+        else:
+            lc_start_adc_function = adc.start_adc
+
     if use_comp:
         # Set up the test, using the ALERT/RDY pin in "conversion-ready" mode.
         print("Comparator mode", file=stderr)
@@ -222,32 +261,6 @@ def main(duration=0, rate=3300, gain=16, verbose=False, **kwargs):
         wait_function = lambda: GPIO.wait_for_edge(ready_pin,
                                                    Adafruit_GPIO.FALLING)
 
-        # A couple things are different depending on whether we're measuring
-        # between lc_channel and ground, or between lc_channel and some other
-        # analogue input (i.e. kwargs['diff_channel']).
-        if differential:
-            print("Also differential mode", file=stderr)
-            # lc_channel, until this next part executes, has represented a single analog
-            # input pin on the ADS1015. To measure the difference between two analog inputs,
-            # we need to change it into a special value that's meaningful only to the
-            # ads_1015 hardware. See the ADS1015 data sheet, page 16.
-            diff_channel = kwargs['diff_channel'] if 'diff_channel' in kwargs else None
-            assert 0 <= diff_channel <= 3 and diff_channel != lc_channel
-            if lc_channel == 0 and diff_channel == 1:
-                lc_channel = 0
-            elif lc_channel == 0 and diff_channel == 3:
-                lc_channel = 1
-            elif lc_channel == 1 and diff_channel == 3:
-                lc_channel = 2
-            elif lc_channel == 2 and diff_channel == 3:
-                lc_channel = 3
-            else:
-                raise ValueError()
-            lc_start_adc_function = adc.start_adc_difference_comparator
-        else:
-            # Single ended mode is the opposite of differential mode, of course.
-            print("Also single-ended mode")
-            lc_start_adc_function = adc.start_adc_comparator
 
         # Set up the test, using the ALERT/RDY pin in "conversion-ready" mode.
         # We store these functions because we will need to switch modes
@@ -269,11 +282,12 @@ def main(duration=0, rate=3300, gain=16, verbose=False, **kwargs):
     else:
         # We have no ALERT/RDY pin, so set up the test to use
         # time.sleep() instead of GPIO interrupts.
-        # TODO: Refactor so that you can do differential measurements
-        # in this mode.
+        # TODO - test whether the logic to assign lc_start_adc_function
+        # earlier is enough to make this code work with both differential
+        # and non-differential measurements.
         sleeper = Sleeper(rate, lambda: (time.time(), adc.get_last_result()))
         wait_function = sleeper.sleep # sleeps roughly the right amount
-        start_lc = lambda: adc.start_adc(
+        start_lc = lambda: lc_start_adc_function(
             lc_channel, gain=gain, data_rate=rate)
         start_battery = lambda: adc.start_adc(
             battery_channel, gain=gain, data_rate=BATTERY_RATE)
@@ -318,8 +332,10 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--duration", type=int, default=0,
                         help="Length of time during which to take samples, "
                         "in seconds. If duration is 0 or omitted, then samples"
-                        " are collected until an EOF is received in stdin."
-                        " This means it runs until you press C-d.")
+                        " are collected until a newline is received on stdin. "
+                        " (That means it goes until you press ENTER.)")
+                        # until an EOF is received in stdin."
+                        # " This means it runs until you press C-d.")
     parser.add_argument("-r", "--rate", type=int, default=3300,
                         choices=ADS1015_RATES,
                         help="Maximum rate at which to sample data, in "
@@ -347,7 +363,7 @@ if __name__ == '__main__':
                         " voltage.")
     parser.add_argument("-C", "--differential-channel", type=int, default=3,
                         help="The channel from which to measure differential"
-                        " voltage.")
+                        " voltage. (Ignored unless -D is passed.)")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="Print the keyword arguments to main() when main"
                         " is called. Also allow printing of the mysterious "
