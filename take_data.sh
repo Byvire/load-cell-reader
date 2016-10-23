@@ -46,7 +46,7 @@ fi
 
 # Exit if the directory exists and is nonempty
 if [ -d "$OUTPUT_DIR" ] && [[ -n $(ls "$OUTPUT_DIR" | head) ]] ; then
-    echo "life is shit" 1>&2
+    echo "The directory $OUTPUT_DIR exists and is not empty" 1>&2
     exit 1
 fi
 
