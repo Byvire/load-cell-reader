@@ -28,10 +28,7 @@ COMPRESSION_CMD="gzip"
 # To see an explanation of the options, use the command "load_cell_reader --help"
 ZERO_CMD="load_cell_reader --duration=3 --gain=16 --comparator-mode --comparator-pin 4 --battery-check-freq 2 --differential --differential-channel=3"
 # This is how the program will be invoked during the main part of the test.
-ACIVE_CMD="load_cell_reader --duration=0 --gain=16 --comparator-mode --comparator-pin 4 --battery-check-freq 2 --differential --differential-channel=3"
-
-#ZERO_CMD="echo foo"
-#ACTIVE_CMD="python /home/oliver/Repo/load-cell-reader/test.py"
+ACTIVE_CMD="load_cell_reader --duration=0 --gain=16 --comparator-mode --comparator-pin 4 --battery-check-freq 2 --differential --differential-channel=3"
 
 # Clearer variable names
 OUTPUT_DIR="$1"
